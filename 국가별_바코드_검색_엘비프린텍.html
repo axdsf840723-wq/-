@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>국가별 바코드 검색 | 엘비프린텍</title>
+<style>
+:root{--navy:#142b4a;--blue:#2463eb;--bg:#f3f6fb;--line:#dce4ef;--muted:#64748b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:"Malgun Gothic",Arial,sans-serif;color:#172033}
+.wrap{max-width:980px;margin:32px auto;padding:0 16px}.head{background:linear-gradient(135deg,#142b4a,#2864bd);color:#fff;padding:28px;border-radius:18px}
+.brand{font-size:13px;letter-spacing:1.5px;opacity:.85}.head h1{margin:10px 0 8px;font-size:28px}.head p{margin:0;color:#e6efff;line-height:1.6}
+.tabs{display:flex;gap:8px;margin:20px 0 0}.tab{border:1px solid #ffffff66;background:#ffffff18;color:white;border-radius:9px;padding:10px 16px;cursor:pointer;font-weight:700}.tab.active{background:white;color:var(--navy)}
+.panel{background:white;border:1px solid var(--line);border-radius:16px;padding:22px;margin-top:16px;box-shadow:0 5px 18px #18345a0a}
+.panel h2{font-size:19px;margin:0 0 8px}.desc{color:var(--muted);font-size:14px;margin:0 0 16px}
+.searchrow{display:flex;gap:9px}.searchrow input{flex:1;min-width:0;padding:14px;border:1px solid #cbd5e1;border-radius:10px;font-size:16px;outline:none}.searchrow input:focus{border-color:var(--blue);box-shadow:0 0 0 3px #2463eb18}
+button.primary{border:0;border-radius:10px;background:var(--blue);color:white;padding:0 22px;font-size:15px;font-weight:700;cursor:pointer}
+.result{margin-top:16px;border:1px solid #cbdcfb;background:#f7faff;border-radius:12px;padding:18px;display:none}.result.show{display:block}.country{font-size:24px;font-weight:800;color:var(--navy)}.prefix{font-size:30px;font-weight:800;color:var(--blue);margin:6px 0}.small{font-size:13px;color:var(--muted);line-height:1.6}
+.notice{margin-top:16px;padding:14px 16px;background:#fff8e8;border:1px solid #f4dfaa;border-radius:10px;font-size:13px;line-height:1.65;color:#684d13}
+.toolbar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px}.toolbar input{padding:10px 12px;border:1px solid var(--line);border-radius:9px;min-width:220px}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:11px 10px;border-bottom:1px solid #edf0f5}th{background:#f7f9fc;color:#475569;font-weight:700}tr:hover td{background:#f8fbff}.tag{display:inline-block;background:#eaf1ff;color:#2455ae;padding:4px 8px;border-radius:6px;font-weight:700}
+.hidden{display:none}.count{font-size:13px;color:var(--muted)}footer{text-align:center;color:#94a3b8;font-size:12px;padding:24px}
+@media(max-width:600px){.wrap{margin:14px auto}.head{padding:22px}.head h1{font-size:23px}.tabs{flex-direction:column}.tab{width:100%}.searchrow{flex-direction:column}.searchrow button{padding:13px}.panel{padding:16px}table{font-size:12px}th,td{padding:9px 6px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="head">
+ <div class="brand">LB PRINTEK · BARCODE GUIDE</div>
+ <h1>국가별 바코드 검색</h1>
+ <p>국가명으로 바코드 번호를 찾거나, 바코드 앞자리로 GS1 할당 국가·지역을 확인하세요.</p>
+ <div class="tabs">
+  <button class="tab active" id="countryTab" onclick="switchMode('country')">국가명 → 바코드</button>
+  <button class="tab" id="codeTab" onclick="switchMode('code')">바코드 → 국가명</button>
+ </div>
+</header>
+
+<section class="panel" id="countryPanel">
+ <h2>국가명으로 검색</h2><p class="desc">국가명 또는 영문 국가명을 입력하세요. 예: 대한민국, 일본, China</p>
+ <div class="searchrow"><input id="countryInput" list="countryNames" placeholder="국가명을 입력하세요" onkeydown="if(event.key==='Enter')searchCountry()"><datalist id="countryNames"></datalist><button class="primary" onclick="searchCountry()">검색하기</button></div>
+ <div class="result" id="countryResult"></div>
+</section>
+
+<section class="panel hidden" id="codePanel">
+ <h2>바코드 번호로 검색</h2><p class="desc">바코드 전체 번호 또는 앞 2~3자리를 입력하세요. 예: 880 또는 8801234567890</p>
+ <div class="searchrow"><input id="codeInput" inputmode="numeric" maxlength="14" placeholder="바코드 번호 입력" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onkeydown="if(event.key==='Enter')searchCode()"><button class="primary" onclick="searchCode()">검색하기</button></div>
+ <div class="result" id="codeResult"></div>
+</section>
+
+<section class="panel">
+ <div class="toolbar"><div><h2>전체 바코드 국가 목록</h2><div class="count" id="count"></div></div><input id="tableSearch" placeholder="국가 또는 번호로 목록 필터" oninput="renderTable()"></div>
+ <div style="overflow-x:auto"><table><thead><tr><th>국가 / 구분</th><th>GS1 접두번호</th><th>관리기관</th></tr></thead><tbody id="tableBody"></tbody></table></div>
+</section>
+<div class="notice"><b>꼭 확인하세요.</b> 바코드 앞자리(GS1 Prefix)는 상품이 등록된 GS1 회원기관을 나타냅니다. 실제 제조국이나 원산지를 의미하지 않습니다. 예를 들어 880은 대한민국 GS1에 할당된 번호이지만, 해당 상품이 반드시 한국에서 생산되었다는 뜻은 아닙니다. 일부 번호는 매장 내부용·쿠폰·도서·정기간행물 등 국가 식별용이 아닙니다.</div>
+<footer>자료 기준: GS1 Prefix 공개 자료 · 엘비프린텍 바코드 안내 도구</footer>
+</div>
+<script>
+const data = [
+["미국 / 캐나다(UPC 관련)","000–019","GS1 US / UPC 관련"],["매장 내부 제한 사용","020–029","지역·업체 내부용"],["미국 의약품 관련","030–039","GS1 US 관련"],["업체 내부 제한 사용","040–049","업체 내부용"],["쿠폰","050–059","쿠폰용"],["미국 / 캐나다","060–099","GS1 US 등"],["미국","100–139","GS1 US"],
+["프랑스 / 모나코","300–379","GS1 France"],["불가리아","380","GS1 Bulgaria"],["슬로베니아","383","GS1 Slovenia"],["크로아티아","385","GS1 Croatia"],["보스니아 헤르체고비나","387","GS1 Bosnia-Herzegovina"],["몬테네그로","389","GS1 Montenegro"],["독일","400–440","GS1 Germany"],["일본","450–459, 490–499","GS1 Japan"],["러시아","460–469","GS1 Russia"],["키르기스스탄","470","GS1 Kyrgyzstan"],["대만","471","GS1 Taiwan"],["에스토니아","474","GS1 Estonia"],["라트비아","475","GS1 Latvia"],["아제르바이잔","476","GS1 Azerbaijan"],["리투아니아","477","GS1 Lithuania"],["우즈베키스탄","478","GS1 Uzbekistan"],["스리랑카","479","GS1 Sri Lanka"],["필리핀","480","GS1 Philippines"],["벨라루스","481","GS1 Belarus"],["우크라이나","482","GS1 Ukraine"],["투르크메니스탄","483","GS1 Turkmenistan"],["몰도바","484","GS1 Moldova"],["아르메니아","485","GS1 Armenia"],["조지아","486","GS1 Georgia"],["카자흐스탄","487","GS1 Kazakhstan"],["타지키스탄","488","GS1 Tajikistan"],["홍콩","489","GS1 Hong Kong"],["영국","500–509","GS1 UK"],["그리스","520–521","GS1 Greece"],["레바논","528","GS1 Lebanon"],["키프로스","529","GS1 Cyprus"],["알바니아","530","GS1 Albania"],["북마케도니아","531","GS1 North Macedonia"],["몰타","535","GS1 Malta"],["아일랜드","539","GS1 Ireland"],["벨기에 / 룩셈부르크","540–549","GS1 Belgium.Luxembourg"],["포르투갈","560","GS1 Portugal"],["아이슬란드","569","GS1 Iceland"],["덴마크","570–579","GS1 Denmark"],["폴란드","590","GS1 Poland"],["루마니아","594","GS1 Romania"],["헝가리","599","GS1 Hungary"],["남아프리카공화국","600–601","GS1 South Africa"],["가나","603","GS1 Ghana"],["세네갈","604","GS1 Senegal"],["바레인","608","GS1 Bahrain"],["모리셔스","609","GS1 Mauritius"],["모로코","611","GS1 Morocco"],["알제리","613","GS1 Algeria"],["나이지리아","615","GS1 Nigeria"],["케냐","616","GS1 Kenya"],["코트디부아르","618","GS1 Côte d’Ivoire"],["튀니지","619","GS1 Tunisia"],["탄자니아","620","GS1 Tanzania"],["시리아","621","GS1 Syria"],["이집트","622","GS1 Egypt"],["브루나이","623","GS1 Brunei"],["리비아","624","GS1 Libya"],["요르단","625","GS1 Jordan"],["이란","626","GS1 Iran"],["쿠웨이트","627","GS1 Kuwait"],["사우디아라비아","628","GS1 Saudi Arabia"],["아랍에미리트","629","GS1 UAE"],["핀란드","640–649","GS1 Finland"],["중국","690–699","GS1 China"],["노르웨이","700–709","GS1 Norway"],["이스라엘","729","GS1 Israel"],["스웨덴","730–739","GS1 Sweden"],["과테말라","740","GS1 Guatemala"],["엘살바도르","741","GS1 El Salvador"],["온두라스","742","GS1 Honduras"],["니카라과","743","GS1 Nicaragua"],["코스타리카","744","GS1 Costa Rica"],["파나마","745","GS1 Panama"],["도미니카공화국","746","GS1 Dominican Republic"],["멕시코","750","GS1 Mexico"],["캐나다","754–755","GS1 Canada"],["베네수엘라","759","GS1 Venezuela"],["스위스 / 리히텐슈타인","760–769","GS1 Switzerland"],["콜롬비아","770–771","GS1 Colombia"],["우루과이","773","GS1 Uruguay"],["페루","775","GS1 Peru"],["볼리비아","777","GS1 Bolivia"],["아르헨티나","778–779","GS1 Argentina"],["칠레","780","GS1 Chile"],["파라과이","784","GS1 Paraguay"],["에콰도르","786","GS1 Ecuador"],["브라질","789–790","GS1 Brazil"],["이탈리아","800–839","GS1 Italy"],["스페인","840–849","GS1 Spain"],["쿠바","850","GS1 Cuba"],["슬로바키아","858","GS1 Slovakia"],["체코","859","GS1 Czech Republic"],["세르비아","860","GS1 Serbia"],["몽골","865","GS1 Mongolia"],["북한","867","GS1 North Korea"],["튀르키예(터키)","868–869","GS1 Türkiye"],["네덜란드","870–879","GS1 Netherlands"],["대한민국","880","GS1 Korea"],["캄보디아","884","GS1 Cambodia"],["태국","885","GS1 Thailand"],["싱가포르","888","GS1 Singapore"],["인도","890","GS1 India"],["베트남","893","GS1 Vietnam"],["파키스탄","896","GS1 Pakistan"],["인도네시아","899","GS1 Indonesia"],["오스트리아","900–919","GS1 Austria"],["호주","930–939","GS1 Australia"],["뉴질랜드","940–949","GS1 New Zealand"],["GS1 글로벌 본부","950","GS1 Global Office"],["EPCglobal 관련","951","GS1 Global Office"],["말레이시아","955","GS1 Malaysia"],["마카오","958","GS1 Macau"],["GTIN-8 관련","960–969","GS1 Global Office / GTIN-8"],["정기간행물(ISSN)","977","ISSN"],["도서(ISBN)","978–979","Bookland / ISBN"],["환불 영수증","980","환불용"],["공동통화 쿠폰","981–984","쿠폰 관련"],["쿠폰","990–999","쿠폰용"]
+];
+const norm=s=>s.toLowerCase().replace(/\s/g,'');
+function switchMode(mode){
+ document.getElementById('countryPanel').classList.toggle('hidden',mode!=='country');
+ document.getElementById('codePanel').classList.toggle('hidden',mode!=='code');
+ document.getElementById('countryTab').classList.toggle('active',mode==='country');
+ document.getElementById('codeTab').classList.toggle('active',mode==='code');
+}
+function show(el,html){el.innerHTML=html;el.classList.add('show')}
+function searchCountry(){
+ const q=norm(document.getElementById('countryInput').value);
+ const box=document.getElementById('countryResult');
+ if(!q){show(box,'검색할 국가명을 입력해 주세요.');return}
+ const found=data.filter(r=>norm(r[0]).includes(q)||norm(r[2]).includes(q));
+ if(!found.length){show(box,'일치하는 국가 또는 구분을 찾지 못했습니다. 국가명을 다시 확인해 주세요.');return}
+ show(box,found.map(r=>`<div class="country">${r[0]}</div><div class="prefix">${r[1]}</div><div class="small">관리기관 / 구분: ${r[2]}</div>`).join('<hr style="border:0;border-top:1px solid #dce6f5;margin:14px 0">'));
+}
+function parseRanges(s){
+ return s.split(',').map(x=>x.trim()).map(x=>{
+  const nums=x.split(/[–-]/).map(v=>parseInt(v.trim(),10));
+  return nums.length===1?[nums[0],nums[0]]:[nums[0],nums[1]];
+ });
+}
+function searchCode(){
+ const q=document.getElementById('codeInput').value.trim(),box=document.getElementById('codeResult');
+ if(!q){show(box,'바코드 번호를 입력해 주세요.');return}
+ if(!/^\d+$/.test(q)){show(box,'숫자만 입력해 주세요.');return}
+ const n=parseInt(q.slice(0,3),10);
+ const found=data.filter(r=>parseRanges(r[1]).some(([a,b])=>n>=a&&n<=b));
+ if(!found.length){show(box,'등록된 공개 GS1 접두번호 범위에서 일치 항목을 찾지 못했습니다.');return}
+ const r=found[0];
+ show(box,`<div class="small">입력한 번호</div><div class="prefix">${q.length>3?q.slice(0,3)+'…':q}</div><div class="country">${r[0]}</div><div class="small">GS1 접두번호: <b>${r[1]}</b><br>관리기관 / 구분: ${r[2]}</div><hr style="border:0;border-top:1px solid #dce6f5;margin:14px 0"><div class="small">이 결과는 GS1 접두번호의 할당 정보를 보여줍니다. 제조국·원산지 판정 결과가 아닙니다.</div>`);
+}
+function renderTable(){
+ const q=norm(document.getElementById('tableSearch').value);
+ const rows=data.filter(r=>r.some(v=>norm(v).includes(q)));
+ document.getElementById('count').textContent=`총 ${rows.length}개 항목`;
+ document.getElementById('tableBody').innerHTML=rows.map(r=>`<tr><td><b>${r[0]}</b></td><td><span class="tag">${r[1]}</span></td><td>${r[2]}</td></tr>`).join('');
+}
+document.getElementById('countryNames').innerHTML=data.map(r=>`<option value="${r[0]}">`).join('');
+renderTable();
+</script>
+</body>
+</html>
